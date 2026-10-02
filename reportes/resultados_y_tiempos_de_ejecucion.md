@@ -1,9 +1,91 @@
 # Resultados y tiempos de ejecución — Transfer Learning (`02_transfer_learning_mandioca.ipynb`)
 
 **Registro de la corrida COMPLETA (SMOKE=False)** · Fecha: **30/09/2026, 01:00:04 → 05:23:10 h** · Duración total: **4 h 23 min 06 s**
+**+ ACTUALIZACIÓN 02/10/2026: re-ejecución completa con test = 500, latencias y LIME nuevo → §0 (arriba) · 2ª corrida 13:17→13:41 con guard anti-warnings (0 avisos)**
 **Hardware:** Windows · GTX 1660 SUPER 6 GB (VRAM pico ≈ 4 GB con B7@600 batch 4) · venv `D:\final_inteligencia\.venv` (torch 2.14.0+cu126, timm 1.0.30)
-**Test:** 300 imágenes balanceadas (60/clase), semilla 42, estratificado `clase × fuente`, sin fuga.
+**Test (corrida original):** 300 imágenes balanceadas (60/clase) · **Test vigente desde 02/10:** 500 (100/clase, `manifest_20pct_test100.csv`) — semilla 42, estratificado `clase × fuente`, sin fuga.
 **Fuentes de datos de este documento:** `modelos\*_res.json` (historiales por época + `tiempo_total_s`/`tiempo_ep_s`), `reportes\02_resultados_experimentos.csv` (tabla maestra), timestamps de archivos, §6 insertada en `00_resumen_consigna_y_avance.md`.
+
+---
+
+## 0. ACTUALIZACIÓN 02/10/2026 — re-ejecución con test = 500 (§1-§7 ↓ = corrida original 30/09, test = 300)
+
+**Corrida completa 02/10/2026 12:06 → 12:28 h · duración 21 min 42 s · 0 errores · 41 celdas (11 md + 30 code).**
+**2ª corrida 02/10/2026 13:17 → 13:41 h · 23,5 min · 0 errores · 0 warnings**, tras aplicar el guard anti-`sklearn.utils.parallel.delayed` (celdas 2, 25 y 31). La 1ª corrida spameó ~180.000 avisos en la celda de latencias (RF predict con `warnings.filters` vacío: race intermitente del paralelo de sklearn) e inflaba el `ms_predict` de RF. **Las latencias de §0.2 se re-midieron en esta 2ª corrida**, con la CPU más cargada (VS Code/Chrome abiertos): valores ~×1,5-2 que en la 1ª; el orden y las conclusiones no cambian.
+Sin reentrenar: las caches de E1-E5 re-evaluaron el test nuevo (`[cache] ... re-evaluando SIN reentrenar`), los
+embeddings de test se re-extrajeron (300 → 500 filas) y clásicos + latencias + LIME + reporte se recalcularon.
+El manifest congelado `manifest_20pct.csv` (test = 300) **no se tocó** (sigue para v2/v3); el test nuevo vive en
+`manifest_20pct_test100.csv` (100/clase; 40 cbb top-up desde `out_subset` porque el test_pool de cbb solo tiene 60).
+
+### 0.1 Tabla maestra ACTUALIZADA (test = 500 imgs balanceadas, 100/clase)
+
+| ID | Método | Backbone | Input | Aug | F1-val | **F1-test** | BalAcc | f1_cbb | f1_cbsd | f1_cgm | f1_cmd | f1_healthy |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| E1 | transfer learning (cabeza) | mobilenetv2_100 | 224 | no | 0,6152 | **0,6171** | 0,6220 | 0,5600 | 0,6294 | 0,6057 | 0,7054 | 0,5849 |
+| E2 | transfer learning (cabeza) | mobilenetv2_100 | 224 | si | 0,5854 | **0,5957** | 0,6020 | 0,5882 | 0,5065 | 0,6092 | 0,6953 | 0,5794 |
+| E3 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600 | no | 0,6551 | **0,6529** | 0,6620 | 0,5316 | 0,6244 | 0,7188 | 0,7966 | 0,5933 |
+| E4 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600 | si | 0,6455 | **0,6727** | 0,6800 | 0,5629 | 0,6422 | 0,7220 | 0,8364 | 0,6000 |
+| E5a | E1 (antes FT) | mobilenetv2_100 | 224 | no | 0,6152 | **0,6171** | 0,6220 | 0,5600 | 0,6294 | 0,6057 | 0,7054 | 0,5849 |
+| E5b | MV2 fine-tuning (despues) | mobilenetv2_100 | 224 | no | 0,6875 | **0,6706** | 0,6760 | 0,6286 | 0,7317 | 0,6550 | 0,7294 | 0,6082 |
+| E6_mobilenetv2 | RandomForest | mobilenetv2_100 | — | - | 0,3537 | **0,2917** | 0,3400 | 0,2459 | 0,4218 | 0,0583 | 0,3992 | 0,3333 |
+| E7_mobilenetv2 | SVM RBF | mobilenetv2_100 | — | - | 0,6204 | **0,5622** | 0,5780 | 0,3885 | 0,5882 | 0,5763 | 0,6971 | 0,5607 |
+| E8_mobilenetv2 | XGBoost | mobilenetv2_100 | — | - | 0,5892 | **0,5347** | 0,5480 | 0,4737 | 0,6042 | 0,5031 | 0,6115 | 0,4809 |
+| E9_mobilenetv2 | MLP (red sobre embeddings) | mobilenetv2_100 | — | - | 0,6502 | **0,5731** | 0,5800 | 0,5366 | 0,5618 | 0,5862 | 0,6667 | 0,5140 |
+| E6_efficientnet | RandomForest | tf_efficientnet_b7.ra_in1k | — | - | 0,4434 | **0,3506** | 0,3900 | 0,3548 | 0,5029 | 0,1468 | 0,4376 | 0,3111 |
+| E7_efficientnet | SVM RBF | tf_efficientnet_b7.ra_in1k | — | - | 0,6370 | **0,6080** | 0,6160 | 0,5926 | 0,5743 | 0,6098 | 0,6950 | 0,5684 |
+| E8_efficientnet | XGBoost | tf_efficientnet_b7.ra_in1k | — | - | 0,6362 | **0,5890** | 0,6000 | 0,5526 | 0,5612 | 0,5750 | 0,6875 | 0,5686 |
+| E9_efficientnet | MLP (red sobre embeddings) | tf_efficientnet_b7.ra_in1k | — | - | 0,6693 | **0,6224** | 0,6300 | 0,5876 | 0,5538 | 0,6743 | 0,7608 | 0,5354 |
+
+**Ranking por F1-test (test = 500):** E4 0,6727 · E5b 0,6706 · E3 0,6529 · E9_efficientnet 0,6224 · E5a 0,6171 · E1 0,6171 · E7_efficientnet 0,6080 · E2 0,5957 · E8_efficientnet 0,5890 · E9_mobilenetv2 0,5731 · E7_mobilenetv2 0,5622 · E8_mobilenetv2 0,5347 · E6_efficientnet 0,3506 · E6_mobilenetv2 0,2917
+
+Cambios vs test = 300 (sección 1): mismo orden en lo esencial; **mejor global sigue E4** (0,6482 → 0,6727),
+E5b sube a 0,6706 (Δ FT = +0,0535) y el mejor clásico sigue E9_efficientnet (0,6148 → 0,6224).
+
+### 0.2 Latencias de inferencia — Fase 6 (nueva)
+
+**Redes en GPU (ms/imagen, GTX 1660 SUPER):**
+
+| Modelo | batch=1 | batch grande | ms/imagen batch grande |
+|---|---|---|---|
+| E1 | 20,239 | 32 | 0,893 |
+| E2 | 16,958 | 32 | 0,890 |
+| E3 | 83,022 | 8 | 64,706 |
+| E4 | 73,715 | 8 | 65,035 |
+| E5 | 14,806 | 32 | 0,895 |
+
+**Clásicos en CPU (ms por imagen, batch=1, con embeddings extraídos por la red):**
+
+| Backbone | Clasificador | embedding (red) | predict (clásico) | **total** |
+|---|---|---|---|---|
+| mobilenetv2 | RF | 25,041 | 119,621 | 144,661 |
+| mobilenetv2 | SVM | 25,041 | 3,790 | 28,831 |
+| mobilenetv2 | XGB | 25,041 | 1,331 | 26,372 |
+| mobilenetv2 | MLP | 25,041 | 0,238 | 25,278 |
+| efficientnet | RF | 77,199 | 115,101 | 192,300 |
+| efficientnet | SVM | 77,199 | 11,812 | 89,010 |
+| efficientnet | XGB | 77,199 | 1,390 | 78,589 |
+| efficientnet | MLP | 77,199 | 0,613 | 77,812 |
+
+- Los CSV completos: `reportes\02_latencia_deep.csv` (10 filas) y `reportes\02_latencia_clasicos.csv` (8 filas).
+- Lectura: E5 (fine-tuning) es la más rápida batch=1 (14,806 ms), seguida de E2 (16,958 ms); B7 con batch 8
+  aprovecha bien la GPU (~65 ms/imagen); entre clásicos, MLP/XGB añaden ~1 ms sobre el embedding de MV2 y
+  RF suma ~115-120 ms de predicción (medido sin el overhead de warnings que inflaba la 1ª corrida).
+
+### 0.3 LIME — nuevo diseño (Fase 7, 02/10)
+
+- **FN (enfermo predicho `healthy`, test = 500):** E1 50 · E2 79 · E3 47 · **E4 33** · E5 35.
+- **M1 = E4** (menos FN) · **M2 = E2** (menor latencia batch=1 = 16,958 ms).
+- Selección: 20 imágenes del test (2 aciertos + 2 errores por clase donde coinciden ambos modelos)
+  × 2 modelos = **40 explicaciones** → 20 PNG en `reportes\lime_antes_despues\` (cada PNG muestra los paneles de M1 y M2).
+- % de acierto de cada modelo sobre esas 20 imágenes: E2 0,5 · E4 0,4 (por diseño la mitad son errores).
+
+### 0.4 Alcance de las secciones siguientes (histórico)
+
+- §1-§7 describen la corrida original del **30/09/2026** (test = 300; 4 h 23 min, de las cuales 92,9 % fue entrenamiento).
+- Sigue vigente: historiales por época, costos/tiempos de entrenamiento, conclusiones de hardware y §5-§7.
+- **Desactualizados** (usar §0.1 o §6 del `00_resumen`): valores de F1-test, ranking, deltas de la §1-§2
+  (eran test = 300), la descripción de LIME de §5 (10 figuras/antes-después → ahora 20 figuras/M1+M2),
+  "15 filas" del CSV de §6 (ahora 14, sin duplicados `_v2`) y "10 PNG + 4 residuales" (ahora 20 PNG limpios).
 
 ---
 

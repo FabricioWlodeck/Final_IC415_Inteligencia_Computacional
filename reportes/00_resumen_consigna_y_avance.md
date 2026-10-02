@@ -3,7 +3,7 @@
 **Asignatura:** IC522 · Inteligencia Computacional
 **Alumno:** WLODECK, Fabricio Joaquín
 **Tema:** Clasificación de enfermedades en mandioca a partir de imágenes (5 clases)
-**Última actualización:** 30/09/2026 (~04:30 h) — **corrida completa del `02` EN CURSO**
+**Última actualización:** 02/10/2026 — **`02` re-ejecutado: test = 500 (100/clase), Fase 6 (latencias) y Fase 7 (LIME nuevo) incorporadas** · 2ª corrida 13:17→13:41 con guard anti-warnings → **0 avisos**
 
 ---
 
@@ -14,67 +14,28 @@
 | Componente | Estado |
 |---|---|
 | `01_EDA_mandioca.ipynb` | ✅ Ejecutado, 39 celdas, 0 errores, 10 figuras (intacto) |
-| `02_transfer_learning_mandioca.ipynb` | ✅ Construido y validado (38 celdas: 10 md + 28 code); smoke completo pasó 0 errores |
-| Corrida **full** (SMOKE=False, GPU) | 🔄 **EN CURSO** — proceso `python` PID 5208 desde 01:00 del 30/09; GPU 87 %, ~4 GB/6 GB VRAM (B7 a 600 px) |
-| E1 (MV2 sin aug) | ✅ Terminado 01:19 → `modelos\E1.pth` + `E1_res.json` |
-| E2 (MV2 con aug) | ✅ Terminado 01:35 → `modelos\E2.pth` + `E2_res.json` |
-| E3 (B7 sin aug) | ✅ Terminado 02:50 → `modelos\E3.pth` + `E3_res.json` |
-| E4 (B7 con aug) | 🔄 Entrenando (inició ~02:50; ~10-14 min/época observado en E3) |
-| E5 (fine-tuning MV2) | ⏳ Pendiente (sigue a E4) |
-| E6-E9 (RF/SVM/XGB/MLP reales) | ⏳ Pendiente |
-| LIME antes/después (real) | ⏳ Pendiente |
-| `reportes\02_resultados_experimentos.csv` + §6 insertado en este `.md` | ⏳ Se genera en las últimas celdas del notebook (Fase 7) |
-| Notebook con outputs | 🟡 El `.ipynb` en disco aún tiene 1 output residual: error `ModuleNotFoundError: No module named 'torch'` en la celda 2 (sesión de VS Code con el interpreter equivocado, **anterior** al fix de kernel; ver §3.5). La corrida en curso lo reescribe entero al terminar → desaparece. **No confiar en los outputs del `.ipynb` hasta que nbconvert termine.** |
+| `02_transfer_learning_mandioca.ipynb` | ✅ 41 celdas (11 md + 30 code); corrida full del **02/10/2026** con **0 errores** (21 min 42 s; 2ª corrida 13:17→13:41 = 23,5 min con guard anti-warnings, **0 avisos**) |
+| Corrida full 02/10 (test=500) | ✅ Sin reentrenar: caches E1-E5 re-evalúan el test nuevo (`[cache] ... re-evaluando SIN reentrenar`); embeddings de test re-extraídos (500 filas) |
+| Splits | ✅ `datos\splits\manifest_20pct_test100.csv` (test=500, 100/clase); `manifest_20pct.csv` (test=300) **intacto** para v2/v3 |
+| E1-E5 (redes) | ✅ caches re-evaluadas sobre test=500 → F1-test actuales en §6 (mejor: E4 = 0,6727) |
+| E6-E9 (RF/SVM/XGB/MLP) + embeddings | ✅ recalculados sobre test=500 (8 corridas) |
+| Fase 6 — Latencias (nueva) | ✅ `reportes\02_latencia_deep.csv` (10 filas) + `reportes\02_latencia_clasicos.csv` (8 filas) |
+| Fase 7 — LIME (nuevo diseño) | ✅ 20 imágenes (2 aciertos + 2 errores/clase) × 2 modelos auto-elegidos → **40 explicaciones**, 20 PNG en `reportes\lime_antes_despues\` |
+| `reportes\02_resultados_experimentos.csv` + §6 | ✅ 14 filas (sin duplicados `_v2`); §6 insertada en la sección 6 de este `.md` |
+| Notebook con outputs | ✅ Sin outputs de error |
 
-**Al terminar la corrida, verificar:**
-1. Existen `modelos\E4.pth`, `E5.pth`, `E6-E9_{mobilenetv2|efficientnet}_res.json` (sin sufijo `_smoke`).
-2. Existe `reportes\02_resultados_experimentos.csv`.
-3. Este archivo tiene insertada la **§6 Resultados** entre los marcadores `<!-- INICIO-RESULTADOS-TL -->
-### §6 — Resultados de entrenamiento (ítems 1-4 y 6)
-
-**Test: 300 imágenes balanceadas (60 por clase), semilla 42, sin fuga (ver notebook 02).**
-
-| ID | Método | Backbone | Input | Aug | F1-val | F1-test | Balanced acc |
-|---|---|---|---|---|---|---|---|
-| E1 | transfer learning (cabeza) | mobilenetv2_100 | 224.0 | no | 0.6152 | 0.5945 | 0.6000 |
-| E2 | transfer learning (cabeza) | mobilenetv2_100 | 224.0 | si | 0.5854 | 0.5761 | 0.5867 |
-| E3 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600.0 | no | 0.6551 | 0.6267 | 0.6367 |
-| E4 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600.0 | si | 0.6455 | 0.6482 | 0.6567 |
-| E5a | E1 (antes FT) | mobilenetv2_100 | 224.0 | no | 0.6152 | 0.5945 | 0.6000 |
-| E5b | MV2 fine-tuning (despues) | mobilenetv2_100 | 224.0 | no | 0.6875 | 0.6189 | 0.6267 |
-| E6_mobilenetv2 | RandomForest | mobilenetv2_100 | nan | - | 0.3537 | 0.2942 | 0.3467 |
-| E7_mobilenetv2 | SVM RBF | mobilenetv2_100 | nan | - | 0.6204 | 0.5623 | 0.5767 |
-| E8_mobilenetv2 | XGBoost | mobilenetv2_100 | nan | - | 0.5892 | 0.5295 | 0.5400 |
-| E9_mobilenetv2 | MLP (red sobre embeddings) | mobilenetv2_100 | nan | - | 0.6502 | 0.5629 | 0.5700 |
-| E6_efficientnet | RandomForest | tf_efficientnet_b7.ra_in1k | nan | - | 0.4434 | 0.3342 | 0.3867 |
-| E7_efficientnet | SVM RBF | tf_efficientnet_b7.ra_in1k | nan | - | 0.6370 | 0.5837 | 0.5933 |
-| E8_efficientnet | XGBoost | tf_efficientnet_b7.ra_in1k | nan | - | 0.6362 | 0.5669 | 0.5800 |
-| E9_efficientnet | MLP (red sobre embeddings) | tf_efficientnet_b7.ra_in1k | nan | - | 0.6693 | 0.6148 | 0.6233 |
-
-- **Mejor modelo global**: `E4` (transfer learning (cabeza), tf_efficientnet_b7.ra_in1k) →
-  **macro-F1 test = 0.6482** (val 0.6455).
-- **Efecto de la augmentación**: MobileNetV2 0.5945 → 0.5761 (Δ = -0.0184) ·
-  EfficientNet-B7 0.6267 → 0.6482 (Δ = +0.0215).
-- **Fine-tuning MobileNetV2 (E5)**: antes 0.5945 → después 0.6189
-  (**Δ = +0.0244**); se descongeló el 30 % de los tensores del backbone (lr 1e-4).
-- **Ítem 4 — clasificadores sobre embeddings**: mejor clásico = `E9_efficientnet` (MLP (red sobre embeddings) sobre tf_efficientnet_b7.ra_in1k)
-  con macro-F1 test = 0.6148.
-- **Sesgo de fuente (comprobación cuantitativa)**: macro-F1 2019 vs 2020 =
-  0.6011 / 0.5823 (antes del FT) y
-  0.5541 / 0.6294 (después del FT).
-- **LIME**: 20 explicaciones (10 imágenes del test balanceado × checkpoints A/B) en `reportes/lime_antes_despues/`;
-  las regiones señaladas se concentran en el limpio y los síntomas del folíolo, no en marco/fondo → sin evidencia de sesgo espurio.
-
-Pendientes de la consigna: ítem 7 (búsqueda de hiperparámetros) e ítem 8 (robustez con peores fotos).
-
-<!-- FIN-RESULTADOS-TL -->` (si el notebook corrió en modo full; en SMOKE **no** se toca este archivo).
-4. `reportes\lime_antes_despues\` con las figuras reales (antes: `E1/E2`-best; después: `E5`).
-5. El notebook no quedó con outputs de error.
+**Verificado el 02/10 tras la corrida:**
+1. ✅ Existen `modelos\E1-E5.pth` + `E6-E9_{mobilenetv2|efficientnet}_res.json` (sin sufijo `_smoke`).
+2. ✅ Existe `reportes\02_resultados_experimentos.csv` con **14 filas**.
+3. ✅ §6 insertada entre `<!-- INICIO-RESULTADOS-TL -->` y `<!-- FIN-RESULTADOS-TL -->` **en la sección 6** (bug de primera-ocurrencia corregido en la celda de reporte: el reemplazo se ancla en el título `## 6. ...`, así el texto de este checklist que menciona los marcadores ya no confunde al script).
+4. ✅ `reportes\lime_antes_despues\` con 20 PNG (2 aciertos + 2 errores por clase; M1 = E4, M2 = E2).
+5. ✅ El notebook no quedó con outputs de error.
+6. ✅ **0 warnings en todo el notebook** (2ª corrida 02/10): guard anti-`sklearn.utils.parallel.delayed` en las celdas 2, 25 y 31 — la 1ª corrida spameó ~180.000 avisos en la celda de latencias (RF predict corriendo con `warnings.filters` vacío, un race intermitente del paralelo de sklearn) e inflaba el `ms_predict` de RF.
 
 ### 0.2 Cómo ejecutar (si hay que re-lanzar)
 
 ```powershell
-# FULL (reales; ~2.5-4 h — E3/E4 dominan). Corre desde D:\final_inteligencia:
+# FULL con caches existentes: ~22-45 min (02/10: 21,7 min; 2ª corrida con guard: 23,5 min — varía con la carga del sistema). Entrenando desde cero: 2,5-4 h (E3/E4 dominan).
 cd D:\final_inteligencia
 .\.venv\Scripts\python -m nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=14400 02_transfer_learning_mandioca.ipynb
 
@@ -84,17 +45,18 @@ $env:SMOKE='1'
 .\.venv\Scripts\python -m nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=3600 02_transfer_learning_mandioca.ipynb
 Remove-Item Env:SMOKE
 ```
-- **Caché**: cada celda de entrenamiento omite el re-entreno si ya existen su `.pth` + `_res.json` → re-lanzar solo completa lo faltante (E1-E3 no se repiten).
+- **Caché**: cada celda de entrenamiento omite el re-entreno si ya existen su `.pth` + `_res.json` → re-lanzar solo completa lo faltante (E1-E3 no se repiten). Si cambió el tamaño del test, el cache **re-evalúa sin reentrenar** y los embeddings de test se re-extraen solos si el conteo no coincide.
 - Si E3/E4 da **CUDA OOM** → bajar `batch=4` a `2` en `CONFIG` (celda de Fase 0).
 - `TqdmWarning: IProgress not found` = inofensivo (falta `ipywidgets`).
+- `sklearn.utils.parallel.delayed should be used with sklearn.utils.parallel.Parallel` **ya no aparece**: la guardia de sklearn lo dispara cuando `warnings.filters` queda vacío (race intermitente en el paralelo de RF) y en ese caso emite 1 aviso **por árbol** (500 × 310 iteraciones en la celda de latencias). Las celdas 2, 25 y 31 restauran los filtros y filtran ese mensaje.
 
 ### 0.3 Directivas del usuario (cumplidas)
 
 - Framework **PyTorch + timm**; notebook **nuevo** `02_transfer_learning_mandioca.ipynb` (el `01_EDA` queda intacto).
-- Test **balanceado 60/clase = 300**; split 20 % del dataset.
+- Test **balanceado 60/clase = 300** (directiva original; `manifest_20pct.csv` queda así para v2/v3). **Actualización 02/10 (v1): test = 100/clase = 500** con top-up (40 cbb desde `out_subset`, porque el test_pool de cbb solo tiene 60) → `manifest_20pct_test100.csv`.
 - Fine-tuning **solo MobileNetV2**, con evaluación antes/después + LIME en ambos checkpoints.
 - Ítems a implementar **todos** (1,3,4,6): comparación de backbones, E1-E5, clasificadores clásicos sobre embeddings, LIME.
-- **"Construir todo pero NO ejecutar la corrida completa"** → el notebook quedó limpio y listo; el **usuario** la lanzó él mismo (en curso, §0.1).
+- **"Construir todo pero NO ejecutar la corrida completa"** → el notebook quedó limpio y listo; el **usuario** la lanzó él mismo (30/09) y se **re-ejecutó completa el 02/10** con el test nuevo. **Actualización 02/10 (v1)**: medir latencia de inferencia (batch=1), matrices de confusión con **conteos absolutos**, y LIME = 2 aciertos + 2 errores por clase en los modelos que auto-selección el notebook (M1 = menos FN "enfermo predicho sano"; M2 = menor latencia).
 
 ---
 
@@ -102,12 +64,12 @@ Remove-Item Env:SMOKE
 
 | # | Ítem | Estado | Nota |
 |---|---|---|---|
-| 1 | Pipeline completo de clasificación con transfer learning (backbones sin cabeza + cabeza propia) | ✅ Implementado | `02` Fases 2-3: `timm.create_model(num_classes=0)` + `Dropout(0.3)+Linear(→5)`; corrida en curso |
-| 2 | Evaluar/backbones: capacidad vs costo computacional (contexto móvil, baja capacidad) | 🔄 En corrida | E1/E2 = MobileNetV2 (224, 2,2 M params) vs E3/E4 = EfficientNet-B7 (600, ~64 M) → tabla con F1 + params + s/época |
-| 3 | Estrategias de transfer learning: fine-tuning, feature extraction, cabeza propia | 🔄 En corrida | Feature extraction = E1-E4 (backbone congelado, BN en eval); fine-tuning = E5 (últimos 30 % de tensores, solo MV2, eval antes/después) |
-| 4 | Clasificadores sobre embeddings (Random Forest, SVM, XGBoost) | ✅ Implementado | `02` Fase 5: E6=RF, E7=SVM RBF con grid (C∈{1,10}×gamma∈{scale,1e-3}), E8=XGBoost, E9=MLP torch (con pesos de clase); sobre embeddings GAP de MV2 **y** B7 → 8 corridas. **Falta ejecutar la real** |
-| 5 | Métricas con costo diferencial de errores entre clases | ✅ Definido | macro-F1 (métrica principal) + balanced accuracy + F1 por clase + matriz de confusión normalizada por fila; FN (sano→enfermo) es el error caro |
-| 6 | Explicabilidad (LIME) + verificación de sesgos espurios | ✅ Implementado | Fase 6b: 5 clases × 2 checkpoints (antes=E1/E2-best, después=E5), 20 explicaciones/clase, figuras + txt. **Falta ejecutar la real**. Sesgos de dominio ya cubiertos en el EDA (§5.3) |
+| 1 | Pipeline completo de clasificación con transfer learning (backbones sin cabeza + cabeza propia) | ✅ Ejecutado | `02` Fases 2-3: `timm.create_model(num_classes=0)` + `Dropout(0.3)+Linear(→5)`; E1-E4 entrenados y re-evaluados en test=500 |
+| 2 | Evaluar/backbones: capacidad vs costo computacional (contexto móvil, baja capacidad) | ✅ Ejecutado | E1/E2 = MobileNetV2 (224, 2,2 M params) vs E3/E4 = EfficientNet-B7 (600, ~64 M) → F1 + params + s/época + **latencias batch=1** (Fase 6) |
+| 3 | Estrategias de transfer learning: fine-tuning, feature extraction, cabeza propia | ✅ Ejecutado | Feature extraction = E1-E4 (backbone congelado, BN en eval); fine-tuning = E5 (últimos 30 % de tensores, solo MV2, eval antes/después en §6) |
+| 4 | Clasificadores sobre embeddings (Random Forest, SVM, XGBoost) | ✅ Ejecutado | `02` Fase 5: E6=RF, E7=SVM RBF con grid (C∈{1,10}×gamma∈{scale,1e-3}), E8=XGBoost, E9=MLP torch (con pesos de clase); sobre embeddings GAP de MV2 **y** B7 → 8 corridas, test=500 (§6) |
+| 5 | Métricas con costo diferencial de errores entre clases | ✅ Definido | macro-F1 (métrica principal) + balanced accuracy + F1 por clase + matriz de confusión con **conteos absolutos** (n=100/clase); FN = **enfermo predicho sano** (real ≠ healthy → predicha healthy) es el error caro |
+| 6 | Explicabilidad (LIME) + verificación de sesgos espurios | ✅ Ejecutado | Fase 7 (nuevo diseño 02/10): 20 imágenes del test (2 aciertos + 2 errores por clase) × 2 modelos auto-elegidos (M1 = menos FN, M2 = más rápido) = 40 explicaciones en 20 PNG. Sesgos de dominio ya cubiertos en el EDA (§5.3) |
 | 7 | Optimización de hiperparámetros (Grid/Random Search, bayesiana, genéticos) | 🟡 Parcial | El grid de SVM (E7) es la parte hecha; falta definir búsqueda sobre la red (lr, dropout, capas…) |
 | 8 | Robustez ante variaciones de captura y casos límite | ⏳ Pendiente | "Las peores fotos": ruido, baja luz, desenfoque, recorte parcial — aún no implementado |
 
@@ -141,26 +103,30 @@ Remove-Item Env:SMOKE
 - Conclusiones completas en **§5 de este documento**; exportación de código: `01_EDA_mandioca.py`.
 - Instrucciones: `INSTRUCCION_EDA_mandioca.md`.
 
-### 3.3 Notebook nuevo — `02_transfer_learning_mandioca.ipynb` (38 celdas, el entregable principal)
+### 3.3 Notebook nuevo — `02_transfer_learning_mandioca.ipynb` (41 celdas, el entregable principal)
 
-**Estructura (10 markdown + 28 code):**
+**Estructura (11 markdown + 30 code):**
 - Fase 0: config (semilla, rutas, splits, `CONFIG` E1-E4, CUDA, `set_seed(42)`, cudnn `benchmark=False`+`deterministic=True`).
-- Fase 1: **splits** → `datos\splits\manifest_20pct.csv` (solo índice; las imágenes nunca se mueven).
+- Fase 1: **splits** → `manifest_20pct.csv` (+ `manifest_20pct_test100.csv`, v1) (solo índice; las imágenes nunca se mueven).
 - Fase 2: infra (`Clf`, transforms, `Dataset`, pesos de clase, `evaluar()`, `entrenar()`).
 - Fase 3: E1-E4 (tabla + curvas).
 - Fase 4: E5 fine-tuning + comparación antes/después.
 - Fase 5: embeddings `.npz` + E6-E9 (RF/SVM/XGB/MLP).
-- Fase 6: LIME antes/después + figuras.
-- Fase 7: fuente, reporte (CSV + §6 en este `.md`), conclusiones, reproducibilidad.
+- Fase 6: **latencia de inferencia** (deep batch=1 / batch mayor; clásicos RF/SVM/XGB/MLP) → `02_latencia_deep.csv` + `02_latencia_clasicos.csv` *(nuevo 02/10)*.
+- Fase 7: LIME con 2 modelos auto-elegidos (M1 = menos FN, M2 = más rápido) sobre 20 imágenes del test (2 aciertos + 2 errores por clase) → 40 explicaciones *(nuevo diseño 02/10)*.
+- Fase 8: fuente (`f1_por_fuente`), reporte (CSV + §6 en este `.md`), conclusiones, reproducibilidad.
 
 **Splits (semilla 42, estratificado `label × source` — evita el sesgo 2019/2020):**
 ```
 26.304  →  subset 20 % = 5.260  (+ out_subset 21.044)
 subset  →  trainval 4.208 / test_pool 1.052
 trainval→  train 3.366 / val 842
-test_pool→ test 300 (60 por clase exactos) + test_pool_rest 752 (held-out)
+test_pool→ test 300 (60/clase) + test_pool_rest 752 (held-out)   ← manifest_20pct.csv (v2/v3, intacto)
++ top-up 02/10 → test 500 (100/clase)                            ← manifest_20pct_test100.csv (v1)
+    (40 cbb desde out_subset — el pool de cbb solo tiene 60; resto de clases del test_pool:
+     cbsd 138, cgm 120, cmd 618, healthy 116 → 100 c/u; test_pool_rest queda 592)
 ```
-Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMOKE **no** se reescribe el manifest.
+Asserts: cero leakage entre train/val/test; v1 valida "test balanceado total = 500". En SMOKE **no** se reescribe el manifest.
 
 **Configs E1-E9:**
 
@@ -169,12 +135,12 @@ Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMO
 | E1 | `mobilenetv2_100` (ImageNet `rw_in1k`) | 224 | no | 20 | 32 | 1e-3 | 4 | ✅ 16 ép (early stop) |
 | E2 | `mobilenetv2_100` | 224 | **sí** | 20 | 32 | 1e-3 | 4 | ✅ 16 ép (early stop) |
 | E3 | `tf_efficientnet_b7.ra_in1k` | 600 | no | 12 | 4 | 1e-3 | 4 | ✅ 7 ép (early stop) |
-| E4 | `tf_efficientnet_b7.ra_in1k` | 600 | **sí** | 12 | 4 | 1e-3 | 4 | 🔄 en curso |
-| E5 | MV2 (desde E1/E2-best) | 224 | sí | ≤6 | 32 | **1e-4** | 3 | ⏳ últimos 30 % de tensores descongelados; eval antes/después |
-| E6 | RF (`n=500`, `balanced_subsample`) sobre embeddings GAP | — | — | — | — | — | — | ⏳ ×{MV2, B7} |
-| E7 | SVM RBF + `StandardScaler` + grid sobre **val** | — | — | — | — | — | — | ⏳ ×{MV2, B7} |
-| E8 | XGBoost (`n=300, d=6, lr=0.1`) | — | — | — | — | — | — | ⏳ ×{MV2, B7} |
-| E9 | MLP torch (256 ocultas, CE con pesos por clase, early stop) | — | — | — | — | — | — | ⏳ ×{MV2, B7} |
+| E4 | `tf_efficientnet_b7.ra_in1k` | 600 | **sí** | 12 | 4 | 1e-3 | 4 | ✅ 12 ép (tope) |
+| E5 | MV2 (desde E1/E2-best) | 224 | sí | ≤6 | 32 | **1e-4** | 3 | ✅ 6 ép (tope); antes/después en §6 |
+| E6 | RF (`n=500`, `balanced_subsample`) sobre embeddings GAP | — | — | — | — | — | — | ✅ ×{MV2, B7} |
+| E7 | SVM RBF + `StandardScaler` + grid sobre **val** | — | — | — | — | — | — | ✅ ×{MV2, B7} |
+| E8 | XGBoost (`n=300, d=6, lr=0.1`) | — | — | — | — | — | — | ✅ ×{MV2, B7} |
+| E9 | MLP torch (256 ocultas, CE con pesos por clase, early stop) | — | — | — | — | — | — | ✅ ×{MV2, B7} |
 
 - Aug = `Resize(256/640)` + `RandomCrop(224/600)` + `RandomVerticalFlip(0.5)` + `RandomHorizontalFlip(0.5)` + `RandomRotation(15°)`; **solo en train**; val/test siempre `CenterCrop` determinístico.
 - IDs de los clásicos: `E6/E7/E8/E9_{mobilenetv2|efficientnet}` vía `bb_key(name)`.
@@ -186,9 +152,9 @@ Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMO
 - AMP (`autocast` fp16 + `GradScaler`); `DataLoader` con `generator=seed 42`.
 - **Pérdida**: `CrossEntropyLoss(weight=...)` con pesos de clase **solo de train**: `w_c = n / (5 · n_c)` → `compute_class_weight("balanced")` (imprime `pesos de clase: {...}` al arrancar; cmd ≈ 0,34 … cbb ≈ 3,5).
 - **Parada/selección**: cada época valida en `val`; early stopping sobre **macro-F1 de val** (tolerancia +1e-4, patience 4/3); se guarda el checkpoint de la **mejor** época; al final evalúa `val` + `test` una vez con esos pesos.
-- **Métrica de comparación final**: macro-F1 sobre `test` (300 balanceados); balanced accuracy secundaria; F1 por clase y matriz de confusión por fila para diagnóstico.
+- **Métrica de comparación final**: macro-F1 sobre `test` (500 balanceados desde 02/10; 300 en la corrida original del 30/09); balanced accuracy secundaria; F1 por clase y matriz de confusión con conteos absolutos para diagnóstico.
 - **Checkpointing**: `modelos\{ID}.pth` + `modelos\{ID}_res.json` (con `val`, `test`, `history` por época) → re-lanzar no reentrena lo existente.
-- **Carga de modelos**: cada `entrenar()` crea una instancia fresca; MV2 descarga 1ª vez en E1 (~14 MB), B7 1ª vez en E3 (~250 MB) → cache HuggingFace en `C:\Users\Fabricio\.cache\huggingface`. E5 hace `load_state_dict` del mejor MV2. LIME carga A=E1/E2-best y B=E5.
+- **Carga de modelos**: cada `entrenar()` crea una instancia fresca; MV2 descarga 1ª vez en E1 (~14 MB), B7 1ª vez en E3 (~250 MB) → cache HuggingFace en `C:\Users\Fabricio\.cache\huggingface`. E5 hace `load_state_dict` del mejor MV2. LIME (Fase 7) auto-elige **M1** = modelo con menos FN (enfermo predicho sano) y **M2** = menor latencia batch=1 entre E1-E5, y explica 2 aciertos + 2 errores por clase en ambos (02/10: M1=E4, M2=E2).
 - **SMOKE** (env var `SMOKE=1`, TAG="_smoke"): 1 época, 8/4/4 por clase, LIME 60 samples/1 imagen; todo con sufijo `_smoke`; NO toca manifest/CSV/este `.md`; el glob de reportes filtra `("_smoke" in nombre) == SMOKE`.
 
 **Bugs encontrados y corregidos (importante si se edita el notebook):**
@@ -206,7 +172,7 @@ Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMO
 - `consigna&notas\` · `datos\` · `ref personal\` · `reportes\` (Markdown) · raíz: `.ipynb`/`.py`/instrucciones.
 - `datos\dataset original\` → **intacto, nunca se modifica**.
 - `datos\cambios 01 - no hojas\` → `outliers\` (33) · `imagenes filtradas\` (26.304) · `labels_filtrado.csv` · `labels_cambios.csv` · `experimento.md`.
-- `datos\splits\manifest_20pct.csv` → índice de splits del `02`.
+- `datos\splits\manifest_20pct.csv` (test 300; v2/v3) + `manifest_20pct_test100.csv` (test 500; v1) → índices de splits del `02`.
 - `modelos\` → checkpoints + `_res.json` + embeddings `.npz` (los reales sin sufijo; los de prueba con `_smoke`).
 - `reportes\` → este archivo · `02_resultados_experimentos.csv` · `lime_antes_despues\`.
 - **Entregable: solo código** (`.ipynb` ejecutado + `.py`); ningún PDF/HTML salvo pedido explícito.
@@ -216,13 +182,13 @@ Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMO
 - GPU: **GTX 1660 SUPER 6 GB** (B7 600px con batch 4 usa ~4 GB; OOM → batch 2).
 - Kernel Jupyter: **`ic522-mandioca`** (registrado en `%APPDATA%\jupyter\kernels`).
 - **Fix VS Code**: el picker mostraba un `~\.venv` fantasma (no existía) → creado junction `C:\Users\Fabricio\.venv` → `D:\final_inteligencia\.venv`, más `.vscode\settings.json` con `"python.defaultInterpreterPath": "D:\\final_inteligencia\\.venv\\Scripts\\python.exe"` en `D:\final_inteligencia` y en la raíz del workspace G:. **Si aparece `No module named 'torch'`, el kernel/espera equivocado → verificar interpreter = `D:\final_inteligencia\.venv\Scripts\python.exe`.**
-- Estimación de tiempos (local, observado): E1 ~19 min (16 ép), E2 ~16 min (16 ép), E3 ~73 min (7 ép, ~10 min/ép) → corrida full completa ≈ **2,5-4 h** (E3/E4 dominan). Colab T4 peor (I/O Drive + CPU); TPU no sirve (PyTorch sin XLA).
+- Estimación de tiempos (local, observado): E1 ~19 min (16 ép), E2 ~16 min (16 ép), E3 ~73 min (7 ép, ~10 min/ép) → corrida desde cero ≈ **2,5-4 h** (E3/E4 dominan). **Con caches, la re-ejecución completa (sin reentrenar) tardó 21 min 42 s el 02/10** (dominado por SVM/XGB grids + latencias + LIME). Colab T4 peor (I/O Drive + CPU); TPU no sirve (PyTorch sin XLA).
 
 ---
 
-## 4. Resultados parciales de la corrida en curso (SMOKE=False, 30/09/2026)
+## 4. Resultados de la PRIMERA corrida (30/09/2026) — histórico (test = 300)
 
-> Generados por `modelos\{ID}_res.json` reales. **Preliminares**: faltan E4-E9 y LIME; la tabla consolidada final la escribe la Fase 7 en `reportes\02_resultados_experimentos.csv` + §6 de este archivo.
+> ⚠️ **Histórico**: corte parcial del 30/09 con **test = 300** (E4 aún entrenando en esa captura). Los valores vigentes (test = 500, con latencias y LIME nuevo) están en **§6**. La tabla consolidada la escribe la Fase 8 en `reportes\02_resultados_experimentos.csv` + §6 de este archivo.
 
 | Exp | Backbone | Input | Aug | Épocas ejecutadas | F1 val | **F1 test** | BalAcc test | F1 test por clase (cbb·cbsd·cgm·cmd·healthy) |
 |---|---|---|---|---|---|---|---|---|
@@ -284,14 +250,77 @@ Asserts: cero leakage entre train/val/test; exactamente 60/clase en test. En SMO
 ## 6. Resultados de los experimentos de transfer learning
 
 <!-- INICIO-RESULTADOS-TL -->
-*(Esta sección la inserta/actualiza automáticamente `02_transfer_learning_mandioca.ipynb` — Fase 7 — al ejecutarse en modo full. Mientras la corrida siga en curso, ver resultados preliminares en §4.)*
+### §6 — Resultados de entrenamiento (ítems 1-4 y 6)
+
+**Test: 500 imágenes balanceadas (100 por clase), semilla 42, sin fuga (ver notebook 02).**
+
+| ID | Método | Backbone | Input | Aug | F1-val | F1-test | Balanced acc |
+|---|---|---|---|---|---|---|---|
+| E1 | transfer learning (cabeza) | mobilenetv2_100 | 224.0 | no | 0.6152 | 0.6171 | 0.6220 |
+| E2 | transfer learning (cabeza) | mobilenetv2_100 | 224.0 | si | 0.5854 | 0.5957 | 0.6020 |
+| E3 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600.0 | no | 0.6551 | 0.6529 | 0.6620 |
+| E4 | transfer learning (cabeza) | tf_efficientnet_b7.ra_in1k | 600.0 | si | 0.6455 | 0.6727 | 0.6800 |
+| E5a | E1 (antes FT) | mobilenetv2_100 | 224.0 | no | 0.6152 | 0.6171 | 0.6220 |
+| E5b | MV2 fine-tuning (despues) | mobilenetv2_100 | 224.0 | no | 0.6875 | 0.6706 | 0.6760 |
+| E6_mobilenetv2 | RandomForest | mobilenetv2_100 | nan | - | 0.3537 | 0.2917 | 0.3400 |
+| E7_mobilenetv2 | SVM RBF | mobilenetv2_100 | nan | - | 0.6204 | 0.5622 | 0.5780 |
+| E8_mobilenetv2 | XGBoost | mobilenetv2_100 | nan | - | 0.5892 | 0.5347 | 0.5480 |
+| E9_mobilenetv2 | MLP (red sobre embeddings) | mobilenetv2_100 | nan | - | 0.6502 | 0.5731 | 0.5800 |
+| E6_efficientnet | RandomForest | tf_efficientnet_b7.ra_in1k | nan | - | 0.4434 | 0.3506 | 0.3900 |
+| E7_efficientnet | SVM RBF | tf_efficientnet_b7.ra_in1k | nan | - | 0.6370 | 0.6080 | 0.6160 |
+| E8_efficientnet | XGBoost | tf_efficientnet_b7.ra_in1k | nan | - | 0.6362 | 0.5890 | 0.6000 |
+| E9_efficientnet | MLP (red sobre embeddings) | tf_efficientnet_b7.ra_in1k | nan | - | 0.6693 | 0.6224 | 0.6300 |
+
+- **Mejor modelo global**: `E4` (transfer learning (cabeza), tf_efficientnet_b7.ra_in1k) →
+  **macro-F1 test = 0.6727** (val 0.6455).
+- **Efecto de la augmentación**: MobileNetV2 0.6171 → 0.5957 (Δ = -0.0214) ·
+  EfficientNet-B7 0.6529 → 0.6727 (Δ = +0.0197).
+- **Fine-tuning MobileNetV2 (E5)**: antes 0.6171 → después 0.6706
+  (**Δ = +0.0535**); se descongeló el 30 % de los tensores del backbone (lr 1e-4).
+- **Ítem 4 — clasificadores sobre embeddings**: mejor clásico = `E9_efficientnet` (MLP (red sobre embeddings) sobre tf_efficientnet_b7.ra_in1k)
+  con macro-F1 test = 0.6224.
+- **Sesgo de fuente (comprobación cuantitativa)**: macro-F1 2019 vs 2020 =
+  0.6295 / 0.6114 (antes del FT) y
+  0.6482 / 0.6753 (después del FT).
+- **LIME**: 40 explicaciones (20 imágenes del test: 2 aciertos + 2 errores por clase, donde
+  coinciden E4 y E5) en `reportes/lime_antes_despues/`; se revisa si las regiones resaltadas son
+  hoja/síntoma o marco/fondo.
+- **Latencia de inferencia (batch=1, ms/imagen)**: E1 20.239 · E2 16.958 · E3 83.022 · E4 73.715 · E5 14.806 · mobilenetv2+RF 144.661 · mobilenetv2+SVM 28.831 · mobilenetv2+XGB 26.372 · mobilenetv2+MLP 25.278 · efficientnet+RF 192.3 · efficientnet+SVM 89.01 · efficientnet+XGB 78.589 · efficientnet+MLP 77.812. Tablas completas en
+  `reportes/02_latencia_deep.csv` y `reportes/02_latencia_clasicos.csv`.
+
+Pendientes de la consigna: ítem 7 (búsqueda de hiperparámetros) e ítem 8 (robustez con peores fotos).
+
 <!-- FIN-RESULTADOS-TL -->
+
+<!-- INICIO-RESULTADOS-V2 -->
+### 6.1 — Resultados v2 (`02b_transfer_learning_mandioca_v2.ipynb`)
+
+**Modo:** SMOKE (validación rápida) · **seed** 42 · **input** 384 px · **test** 300 imgs (60/clase) · **selección por val**.
+
+| ID | Método | F1-val | F1-test | IC 95 % (bootstrap) | Costo/test | ms/img |
+|---|---|---|---|---|---|---|
+| E1 (v1) | backbone congelado, cabeza lineal @224 | 0.1300 | 0.1167 | [0.0000, 0.2206] | 1.500 | - |
+| FT_noaug | FT MobileNetV2 completo (sin aug) | 0.1833 | 0.1971 | [0.0399, 0.3089] | 1.600 | 14.7 |
+| FT_aug | FT MobileNetV2 completo (con aug) | 0.1127 | 0.2655 | [0.0868, 0.4134] | 1.350 | 12.8 |
+
+- **Mejor FT (elegido por val):** `FT_noaug` → **macro-F1 test = 0.1971** (val 0.1833), costo 1.600, 14.7 ms/img, 0.88 GFLOPs, 9.2 MB.
+- **vs. v1 (E1, backbone congelado):** 0.1167 → 0.1971 (Δ = +0.0805).
+- **Δ bootstrap** (FT_aug -> FT_noaug): +0.0646 IC95 [-0.0598, +0.2214] → NO distinguible del ruido.
+- **Δ bootstrap** (E1 (v1) -> FT_noaug): -0.0673 IC95 [-0.1828, +0.0564] → NO distinguible del ruido.
+- **Calibración:** ECE test 0.0259 → 0.0314 con temperatura T = 0.48.
+- **Abstención:** tau = 0.00 (elegido por val, precisión ≥ 0.85); ver tabla 07 en el CSV para cobertura/precisión en test y rechazo OOD.
+- **Explicabilidad:** la hoja ocupa 58.0% del cuadro; LIME concentra 57.9% y Grad-CAM 56.6% de la importancia dentro de la hoja (clase real).
+- **Robustez (peor caso medido para FT_noaug):** ruido nivel 0.2 → macro-F1 0.0600 (base 0.1971).
+
+Detalle completo: `reportes\03_resultados_v2.csv` (secciones 01-13), informes en `reportes\informes_v2\`, LIME/Grad-CAM en `reportes\lime_gradcam_v2\`, robustez en `reportes\robustez_v2\`.
+
+<!-- FIN-RESULTADOS-V2 -->
 
 ---
 
 ## 7. Próximos pasos (por ítem de la consigna)
 
-1. **Esperar/verificar la corrida en curso** (§0.1): E4 → E5 → E6-E9 → LIME → CSV + §6. Si falla OOM en E4 → `batch=4→2`.
+1. ✅ **Corrida completa verificada** (original 30/09 + re-ejecución 02/10 con test=500, Fase 6 latencias y Fase 7 LIME nuevos; §0.1).
 2. **Ítem 5** — Con la tabla final, revisar matriz de confusión normalizada y costo asimétrico (sano→enfermo); comentar hallazgos en §6/§7 del notebook.
 3. **Ítem 7** — Definir búsqueda de hiperparámetros de la red (lr, dropout, capas, descongelamiento progresivo) más allá del grid de SVM ya incluido.
 4. **Ítem 8** — Test de robustez con "las peores fotos": ruido, baja luz, desenfoque, hoja parcial fuera de cuadro.

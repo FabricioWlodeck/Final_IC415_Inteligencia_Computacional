@@ -1,0 +1,9 @@
+backbone,clasificador,ms_embedding,ms_predict,ms_total
+mobilenetv2,RF,25.041,119.621,144.661
+mobilenetv2,SVM,25.041,3.79,28.831
+mobilenetv2,XGB,25.041,1.331,26.372
+mobilenetv2,MLP,25.041,0.238,25.278
+efficientnet,RF,77.199,115.101,192.3
+efficientnet,SVM,77.199,11.812,89.01
+efficientnet,XGB,77.199,1.39,78.589
+efficientnet,MLP,77.199,0.613,77.812

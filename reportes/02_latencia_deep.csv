@@ -1,0 +1,11 @@
+modelo,backbone,size,batch,ms_por_imagen
+E1,mobilenetv2_100,224,1,20.239
+E1,mobilenetv2_100,224,32,0.893
+E2,mobilenetv2_100,224,1,16.958
+E2,mobilenetv2_100,224,32,0.89
+E3,tf_efficientnet_b7.ra_in1k,600,1,83.022
+E3,tf_efficientnet_b7.ra_in1k,600,8,64.706
+E4,tf_efficientnet_b7.ra_in1k,600,1,73.715
+E4,tf_efficientnet_b7.ra_in1k,600,8,65.035
+E5,mobilenetv2_100,224,1,14.806
+E5,mobilenetv2_100,224,32,0.895
